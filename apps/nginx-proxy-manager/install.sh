@@ -169,7 +169,10 @@ step_start "Node.js"
     arm64 | aarch64) _nodeArch="arm64" _opensslArch="linux-aarch64";;
     armhf) _nodeArch="armv7l" _opensslArch="linux-armv4";;
     i386 | x86) _nodeArch="x86" _opensslArch="linux-elf";;
-    *) step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1;;
+    *) 
+      echo "WARNING: Architecture not officially supported: ${EPS_OS_ARCH}. Attempting to continue..."
+      _nodeArch="unknown"  # Используйте значение по умолчанию, если архитектура неизвестна.
+      ;;
   esac
 
   if [ "$EPS_OS_DISTRO" = "alpine" ]; then
