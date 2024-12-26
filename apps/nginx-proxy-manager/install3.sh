@@ -181,32 +181,45 @@ step_start "Node.js"
     arm64 | aarch64) _nodeArch="arm64" _opensslArch="linux-aarch64";;
     armhf) _nodeArch="armv7l" _opensslArch="linux-armv4";;
     i386 | x86) _nodeArch="x86" _opensslArch="linux-elf";;
-    *) 
+    *)
       echo "WARNING: Architecture not officially supported: ${EPS_OS_ARCH}. Attempting to continue..."
-      _nodeArch="unknown"  # Используйте значение по умолчанию, если архитектура неизвестна.
+      _nodeArch="x64"  # Значение по умолчанию для неподдерживаемых архитектур
       ;;
   esac
 
   if [ "$EPS_OS_DISTRO" = "alpine" ]; then
-    #if [ "$_nodeArch" != "x64" ]; then
-    #  step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1
-    #fi
-
     _nodePackage="node-$NODE_VERSION-linux-$_nodeArch-musl.tar.xz"
-    os_fetch -O $_nodePackage https://unofficial-builds.nodejs.org/download/release/$NODE_VERSION/$_nodePackage
-    os_fetch -O SHASUMS256.txt https://unofficial-builds.nodejs.org/download/release/$NODE_VERSION/SHASUMS256.txt
+    _nodeUrl="https://unofficial-builds.nodejs.org/download/release/$NODE_VERSION/$_nodePackage"
   else
     _nodePackage="node-$NODE_VERSION-linux-$_nodeArch.tar.xz"
-    os_fetch -O $_nodePackage https://nodejs.org/dist/$NODE_VERSION/$_nodePackage
-    os_fetch -O SHASUMS256.txt https://nodejs.org/dist/$NODE_VERSION/SHASUMS256.txt
+    _nodeUrl="https://nodejs.org/dist/$NODE_VERSION/$_nodePackage"
   fi
 
-  grep " $_nodePackage\$" SHASUMS256.txt | sha256sum -c >$__OUTPUT
-  tar -xJf "$_nodePackage" -C /usr/local --strip-components=1 --no-same-owner >$__OUTPUT
-  ln -sf /usr/local/bin/node /usr/local/bin/nodejs
-  rm "$_nodePackage" SHASUMS256.txt
-  find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name "$_opensslArch" -exec rm -rf {} \; >$__OUTPUT
-  step_end "Node.js ${CLR_CYB}$NODE_VERSION${CLR} ${CLR_GN}Installed"
+  echo "Downloading Node.js from $_nodeUrl"
+  if ! os_fetch -O $_nodePackage "$_nodeUrl"; then
+    echo "ERROR: Failed to download Node.js from $_nodeUrl. Attempting to use repository instead."
+    if [ "$EPS_OS_DISTRO" = "alpine" ]; then
+      apk add nodejs npm
+    else
+      curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+      apt-get install -y nodejs
+    fi
+  else
+    grep " $_nodePackage\$" SHASUMS256.txt | sha256sum -c >$__OUTPUT
+    tar -xJf "$_nodePackage" -C /usr/local --strip-components=1 --no-same-owner >$__OUTPUT
+    ln -sf /usr/local/bin/node /usr/local/bin/nodejs
+    rm "$_nodePackage" SHASUMS256.txt
+    find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name "$_opensslArch" -exec rm -rf {} \; >$__OUTPUT
+  fi
+
+  NODE_VERSION_INSTALLED=$(node -v 2>/dev/null || echo "Node.js not installed")
+  if [ "$NODE_VERSION_INSTALLED" != "Node.js not installed" ]; then
+    step_end "Node.js ${CLR_CYB}$NODE_VERSION_INSTALLED${CLR} ${CLR_GN}Installed"
+  else
+    echo "ERROR: Node.js installation failed."
+    step_end "Node.js installation failed. Please check manually." 1
+  fi
+
 
 step_start "Yarn"
   export GNUPGHOME="$(mktemp -d)"
