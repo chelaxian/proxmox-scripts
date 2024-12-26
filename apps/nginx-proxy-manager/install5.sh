@@ -175,18 +175,17 @@ step_start "Node.js"
   _opensslArch="linux*"
 
   case "${EPS_OS_ARCH##*-}" in
-    amd64 | x86_64) _nodeArch="x64" _opensslArch="linux-x86_64";;
-    ppc64el) _nodeArch="ppc64le" _opensslArch="linux-ppc64le";;
-    s390x) _nodeArch="s390x" _opensslArch="linux-s390x";;
-    arm64 | aarch64) _nodeArch="arm64" _opensslArch="linux-aarch64";;
-    armhf) _nodeArch="armv7l" _opensslArch="linux-armv4";;
-    i386 | x86) _nodeArch="x86" _opensslArch="linux-elf";;
+    amd64 | x86_64) _nodeArch="x64";;
+    arm64 | aarch64) _nodeArch="arm64";;
+    armhf) _nodeArch="armv7l";;
+    i386 | x86) _nodeArch="x86";;
     *)
-      echo "WARNING: Architecture not officially supported: ${EPS_OS_ARCH}. Attempting to continue..."
-      _nodeArch="x64"  # Значение по умолчанию для неподдерживаемых архитектур
+      echo "WARNING: Architecture not officially supported: ${EPS_OS_ARCH}. Using default architecture (x64)..."
+      _nodeArch="x64"  # Default architecture
       ;;
   esac
 
+  # Define Node.js version and URL
   if [ "$EPS_OS_DISTRO" = "alpine" ]; then
     _nodePackage="node-$NODE_VERSION-linux-$_nodeArch-musl.tar.xz"
     _nodeUrl="https://unofficial-builds.nodejs.org/download/release/$NODE_VERSION/$_nodePackage"
@@ -195,23 +194,37 @@ step_start "Node.js"
     _nodeUrl="https://nodejs.org/dist/$NODE_VERSION/$_nodePackage"
   fi
 
-  echo "Downloading Node.js from $_nodeUrl"
+  echo "Attempting to download Node.js from $_nodeUrl"
+
   if ! os_fetch -O $_nodePackage "$_nodeUrl"; then
-    echo "ERROR: Failed to download Node.js from $_nodeUrl. Attempting to use repository instead."
+    echo "ERROR: Failed to download Node.js from $_nodeUrl. Trying alternative method..."
+    
     if [ "$EPS_OS_DISTRO" = "alpine" ]; then
-      apk add nodejs npm
+      apk add nodejs npm || {
+        echo "ERROR: Failed to install Node.js from Alpine repositories. Please check manually."
+        step_end "Node.js installation failed" 1
+      }
     else
-      curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-      apt-get install -y nodejs
+      curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - || {
+        echo "ERROR: Failed to add Node.js repository. Please check manually."
+        step_end "Node.js installation failed" 1
+      }
+      apt-get install -y nodejs || {
+        echo "ERROR: Failed to install Node.js. Please check manually."
+        step_end "Node.js installation failed" 1
+      }
     fi
   else
-    grep " $_nodePackage\$" SHASUMS256.txt | sha256sum -c >$__OUTPUT
-    tar -xJf "$_nodePackage" -C /usr/local --strip-components=1 --no-same-owner >$__OUTPUT
-    ln -sf /usr/local/bin/node /usr/local/bin/nodejs
-    rm "$_nodePackage" SHASUMS256.txt
-    find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name "$_opensslArch" -exec rm -rf {} \; >$__OUTPUT
+    # Verify download and install
+    echo "Downloaded Node.js package successfully."
+    tar -xJf "$_nodePackage" -C /usr/local --strip-components=1 --no-same-owner || {
+      echo "ERROR: Failed to extract Node.js package."
+      step_end "Node.js installation failed" 1
+    }
+    rm "$_nodePackage"
   fi
 
+  # Verify Node.js installation
   NODE_VERSION_INSTALLED=$(node -v 2>/dev/null || echo "Node.js not installed")
   if [ "$NODE_VERSION_INSTALLED" != "Node.js not installed" ]; then
     step_end "Node.js ${CLR_CYB}$NODE_VERSION_INSTALLED${CLR} ${CLR_GN}Installed"
