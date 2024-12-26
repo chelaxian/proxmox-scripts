@@ -170,61 +170,49 @@ step_start "Openresty"
   step_end "Openresty ${CLR_CYB}v$OPENRESTY_VERSION${CLR} ${CLR_GN}Installed"
 
 step_start "Node.js"
-  _nodePackage=""
-  _nodeArch=""
-  _opensslArch="linux*"
 
+  # Определяем архитектуру
+  _nodeArch=""
   case "${EPS_OS_ARCH##*-}" in
     amd64 | x86_64) _nodeArch="x64";;
     arm64 | aarch64) _nodeArch="arm64";;
     armhf) _nodeArch="armv7l";;
     i386 | x86) _nodeArch="x86";;
     *)
-      echo "WARNING: Architecture not officially supported: ${EPS_OS_ARCH}. Using default architecture (x64)..."
-      _nodeArch="x64"  # Default architecture
+      echo "WARNING: Unsupported architecture detected (${EPS_OS_ARCH}). Using default architecture (x64)..."
+      _nodeArch="x64"
       ;;
   esac
 
-  # Define Node.js version and URL
-  if [ "$EPS_OS_DISTRO" = "alpine" ]; then
+  # Проверяем, доступен ли Node.js в официальных репозиториях Alpine
+  echo "Checking for Node.js availability in Alpine repositories..."
+  if apk add nodejs npm; then
+    echo "Node.js successfully installed from Alpine repositories."
+  else
+    echo "Failed to install Node.js from Alpine repositories. Attempting manual installation..."
+
+    # Скачиваем Node.js из неофициальных сборок для Alpine (musl)
     _nodePackage="node-$NODE_VERSION-linux-$_nodeArch-musl.tar.xz"
     _nodeUrl="https://unofficial-builds.nodejs.org/download/release/$NODE_VERSION/$_nodePackage"
-  else
-    _nodePackage="node-$NODE_VERSION-linux-$_nodeArch.tar.xz"
-    _nodeUrl="https://nodejs.org/dist/$NODE_VERSION/$_nodePackage"
-  fi
 
-  echo "Attempting to download Node.js from $_nodeUrl"
-
-  if ! os_fetch -O $_nodePackage "$_nodeUrl"; then
-    echo "ERROR: Failed to download Node.js from $_nodeUrl. Trying alternative method..."
-    
-    if [ "$EPS_OS_DISTRO" = "alpine" ]; then
-      apk add nodejs npm || {
-        echo "ERROR: Failed to install Node.js from Alpine repositories. Please check manually."
-        step_end "Node.js installation failed" 1
-      }
-    else
-      curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - || {
-        echo "ERROR: Failed to add Node.js repository. Please check manually."
-        step_end "Node.js installation failed" 1
-      }
-      apt-get install -y nodejs || {
-        echo "ERROR: Failed to install Node.js. Please check manually."
-        step_end "Node.js installation failed" 1
-      }
+    echo "Downloading Node.js from $_nodeUrl"
+    if ! wget -O $_nodePackage "$_nodeUrl"; then
+      echo "ERROR: Failed to download Node.js from $_nodeUrl."
+      step_end "Node.js installation failed" 1
     fi
-  else
-    # Verify download and install
-    echo "Downloaded Node.js package successfully."
-    tar -xJf "$_nodePackage" -C /usr/local --strip-components=1 --no-same-owner || {
+
+    # Распаковываем и устанавливаем Node.js
+    echo "Extracting Node.js..."
+    tar -xJf "$_nodePackage" -C /usr/local --strip-components=1 || {
       echo "ERROR: Failed to extract Node.js package."
       step_end "Node.js installation failed" 1
     }
+
+    # Удаляем скачанный архив
     rm "$_nodePackage"
   fi
 
-  # Verify Node.js installation
+  # Проверяем успешность установки
   NODE_VERSION_INSTALLED=$(node -v 2>/dev/null || echo "Node.js not installed")
   if [ "$NODE_VERSION_INSTALLED" != "Node.js not installed" ]; then
     step_end "Node.js ${CLR_CYB}$NODE_VERSION_INSTALLED${CLR} ${CLR_GN}Installed"
@@ -232,6 +220,7 @@ step_start "Node.js"
     echo "ERROR: Node.js installation failed."
     step_end "Node.js installation failed. Please check manually." 1
   fi
+
 
 
 step_start "Yarn"
