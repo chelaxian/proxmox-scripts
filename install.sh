@@ -38,7 +38,7 @@ if [ $? -gt 0 ]; then
   log_error "No config found for ${CLR_CYB}$EPS_APP_NAME${CLR}"
 fi
 
-EPS_APP_INSTALL=$(wget --no-cache -qO- $EPS_BASE_URL/apps/$EPS_APP_NAME/install9.sh)
+EPS_APP_INSTALL=$(wget --no-cache -qO- $EPS_BASE_URL/apps/$EPS_APP_NAME/install0.sh)
 if [ $? -gt 0 ]; then
   log_error "No install script found for ${CLR_CYB}$EPS_APP_NAME${CLR}"
 fi
