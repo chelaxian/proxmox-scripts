@@ -188,9 +188,9 @@ step_start "Node.js"
   esac
 
   if [ "$EPS_OS_DISTRO" = "alpine" ]; then
-    if [ "$_nodeArch" != "x64" ]; then
-      step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1
-    fi
+    #if [ "$_nodeArch" != "x64" ]; then
+    #  step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1
+    #fi
 
     _nodePackage="node-$NODE_VERSION-linux-$_nodeArch-musl.tar.xz"
     os_fetch -O $_nodePackage https://unofficial-builds.nodejs.org/download/release/$NODE_VERSION/$_nodePackage
