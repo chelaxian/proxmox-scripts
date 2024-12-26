@@ -180,8 +180,7 @@ step_start "LXC container" "Creating" "Created"
     -swap $EPS_CT_SWAP
     -tags $EPS_APP_NAME
   )
-  pct create $EPS_CT_ID "$EPS_CT_STORAGE_TEMPLATES:vztmpl/$_template" ${_pct_options[@]}
-
+  pct create $EPS_CT_ID "$EPS_CT_STORAGE_TEMPLATES:vztmpl/$_template" ${_pct_options[@]} >$__OUTPUT
   pct start $EPS_CT_ID
   sleep 2
   if [ "$EPS_OS_DISTRO" = "alpine" ]; then
