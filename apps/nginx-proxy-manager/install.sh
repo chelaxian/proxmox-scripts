@@ -82,11 +82,11 @@ step_start "Rust" "Installing" "Installed"
   esac
 
 
-  if [ "$EPS_OS_DISTRO" = "alpine" ]; then
-    if [ "$EPS_OS_ARCH" != "x86_64" -a "$EPS_OS_ARCH" != "aarch64" ]; then
-      step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1
-    fi
-  fi
+  #if [ "$EPS_OS_DISTRO" = "alpine" ]; then
+  #  if [ "$EPS_OS_ARCH" != "x86_64" -a "$EPS_OS_ARCH" != "aarch64" ]; then
+  #    step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1
+  #  fi
+  #fi
   
   os_fetch -O ./rustup-init https://static.rust-lang.org/rustup/archive/1.26.0/$_rustArch/rustup-init
   chmod +x ./rustup-init
