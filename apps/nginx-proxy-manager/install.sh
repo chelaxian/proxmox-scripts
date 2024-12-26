@@ -63,12 +63,24 @@ step_start "Rust" "Installing" "Installed"
   fi
 
   case "${EPS_OS_ARCH##*-}" in
-    amd64 | x86_64) _rustArch="x86_64-unknown-linux-${_rustClibtype}";;
-    arm64 | aarch64) _rustArch="aarch64-unknown-linux-${_rustClibtype}";;
-    armhf) _rustArch="armv7-unknown-linux-gnueabihf";;
-    i386 | x86) _rustArch="i686-unknown-linux-${_rustClibtype}";;
-    *) step_end "Architecture not supported: ${CLR_CYB}$EPS_OS_ARCH${CLR}" 1;;
+    amd64 | x86_64)
+      _rustArch="x86_64-unknown-linux-${_rustClibtype}"
+      ;;
+    arm64 | aarch64)
+      _rustArch="aarch64-unknown-linux-${_rustClibtype}"
+      ;;
+    armhf)
+      _rustArch="armv7-unknown-linux-gnueabihf"
+      ;;
+    i386 | x86)
+      _rustArch="i686-unknown-linux-${_rustClibtype}"
+      ;;
+    *)
+      echo "WARNING: Architecture not officially supported: ${EPS_OS_ARCH}. Using default architecture for Rust..."
+      _rustArch="x86_64-unknown-linux-${_rustClibtype}" # Значение по умолчанию для неподдерживаемых архитектур
+      ;;
   esac
+
 
   if [ "$EPS_OS_DISTRO" = "alpine" ]; then
     if [ "$EPS_OS_ARCH" != "x86_64" -a "$EPS_OS_ARCH" != "aarch64" ]; then
