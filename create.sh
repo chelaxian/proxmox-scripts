@@ -161,10 +161,10 @@ step_start "LXC templates" "Checking" "OK"
   step_end "Using LXC template: ${CLR_CYB}${_template}${CLR}"
 
 step_start "LXC container" "Creating" "Created"
-  _storage_type=$(pvesm status -storage $EPS_CT_STORAGE_CONTAINER >$__OUTPUT | awk 'NR>1 {print $2}')
+  _storage_type=$(pvesm status | awk -v storage="$EPS_CT_STORAGE_CONTAINER" '$1 == storage {print $2}')
   if [ "$_storage_type" = "zfspool" ]; then
-    log "warn" "Some containers may not work properly due to ZFS not supporting 'fallocate'."
-    sleep 3
+      log "warn" "Some containers may not work properly due to ZFS not supporting 'fallocate'."
+      sleep 3
   fi
   
   _pct_options=(
